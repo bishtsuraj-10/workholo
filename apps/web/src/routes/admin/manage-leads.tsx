@@ -1,6 +1,17 @@
 // biome-ignore-all lint/performance/noJsxPropsBind: Table controls use local component state.
 
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "@workholo/ui/components/alert-dialog";
 import { Button } from "@workholo/ui/components/button";
 import { Input } from "@workholo/ui/components/input";
 import {
@@ -15,50 +26,49 @@ import {
 import { useMemo, useState } from "react";
 
 import { AdminTopbar } from "@/components/admin/admin-topbar";
+import { queryClient, queryUtils } from "@/utils/orpc";
 
 export const Route = createFileRoute("/admin/manage-leads")({
 	component: ManageLeadsPage,
 });
 
-type LeadList = {
-	id: number;
-	name: string;
-	description: string;
-};
-
-const leadLists: LeadList[] = [
-	{ id: 1, name: "NLPC", description: "NLPC" },
-	{ id: 2, name: "HRD Inhouse", description: "HRD Inhouse" },
-	{ id: 3, name: "CRLA ACC", description: "CRLA ACC" },
-	{ id: 4, name: "CRLB ACC", description: "CRLB ACC" },
-	{ id: 5, name: "CRLD ACC", description: "CRLD ACC" },
-	{ id: 6, name: "CRLA ACC Elites", description: "CRLA ACC Elites" },
-	{ id: 7, name: "NLPC Backend", description: "NLPC Backend" },
-	{ id: 8, name: "CRLA KC", description: "CRLA KC" },
-	{ id: 9, name: "CRLB KC", description: "CRLB KC" },
-	{ id: 10, name: "CRLD KC", description: "CRLD KC" },
-	{ id: 11, name: "CRM KC", description: "CRM KC" },
-	{ id: 12, name: "HRD KC", description: "HRD KC" },
-];
-
 function ManageLeadsPage() {
 	const navigate = useNavigate();
-
+	const {
+		data: leadLists = [],
+		error,
+		isLoading,
+	} = useQuery(queryUtils.leadLists.getAll.queryOptions());
 	const [search, setSearch] = useState("");
 	const [pageSize, setPageSize] = useState(10);
 	const [currentPage, setCurrentPage] = useState(1);
+	const [leadListToDelete, setLeadListToDelete] =
+		useState<NonNullable<(typeof leadLists)[number]>>();
+	const deleteMutation = useMutation(
+		queryUtils.leadLists.delete.mutationOptions({
+			onSuccess: async () => {
+				await queryClient.invalidateQueries({
+					queryKey: queryUtils.leadLists.getAll.queryKey(),
+				});
+				setLeadListToDelete(undefined);
+			},
+		})
+	);
 
+	const resolvedLeadLists = leadLists.filter(
+		(item): item is NonNullable<typeof item> => item !== null
+	);
 	const filteredLists = useMemo(() => {
 		const value = search.trim().toLowerCase();
 
 		if (!value) {
-			return leadLists;
+			return resolvedLeadLists;
 		}
 
-		return leadLists.filter((item) =>
+		return resolvedLeadLists.filter((item) =>
 			`${item.name} ${item.description}`.toLowerCase().includes(value)
 		);
-	}, [search]);
+	}, [resolvedLeadLists, search]);
 
 	const totalPages = Math.max(1, Math.ceil(filteredLists.length / pageSize));
 
@@ -68,7 +78,29 @@ function ManageLeadsPage() {
 
 	const visibleLists = filteredLists.slice(startIndex, startIndex + pageSize);
 
-	const totalLists = leadLists.length;
+	const totalLists = resolvedLeadLists.length;
+	const navigateToDetails = (leadListId: string) =>
+		navigate({ to: "/admin/leads/$leadListId", params: { leadListId } });
+	const handleAction = (
+		action: string,
+		leadList: NonNullable<(typeof leadLists)[number]>
+	) => {
+		if (action === "view") {
+			navigateToDetails(leadList.id);
+		}
+		if (action === "edit") {
+			navigate({ to: "/admin/add-list", search: { edit: leadList.id } });
+		}
+		if (action === "delete") {
+			setLeadListToDelete(leadList);
+		}
+	};
+	const confirmDelete = () => {
+		if (!leadListToDelete) {
+			return;
+		}
+		deleteMutation.mutate({ id: leadListToDelete.id });
+	};
 
 	return (
 		<div className="min-h-svh bg-[#eef3f9] dark:bg-[#07111f]">
@@ -132,6 +164,7 @@ function ManageLeadsPage() {
 								onClick={() =>
 									navigate({
 										to: "/admin/add-list",
+										search: { edit: undefined },
 									})
 								}
 								type="button"
@@ -261,53 +294,79 @@ function ManageLeadsPage() {
 								</thead>
 
 								<tbody>
-									{visibleLists.map((item) => (
-										<tr
-											className="border-slate-100 border-b transition-colors last:border-0 hover:bg-blue-50/30 dark:border-slate-800 dark:hover:bg-blue-950/30"
-											key={item.id}
-										>
-											<td className="px-4 py-3 font-medium text-slate-400 dark:text-slate-500">
-												{item.id}
-											</td>
-
-											<td className="px-4 py-3">
-												<div className="flex items-center gap-2.5">
-													<div className="flex size-8 items-center justify-center rounded-lg bg-blue-50 text-[#0757ff] dark:bg-blue-950/60 dark:text-blue-400">
-														<List className="size-3.5" />
-													</div>
-
-													<button
-														className="font-semibold text-[#0757ff] hover:underline dark:text-blue-400"
-														type="button"
-													>
-														{item.name}
-													</button>
-												</div>
-											</td>
-
-											<td className="px-4 py-3 text-slate-500 dark:text-slate-400">
-												{item.description}
-											</td>
-
-											<td className="px-4 py-3">
-												<select
-													className="h-8 min-w-[125px] rounded-lg border border-slate-200 bg-white px-2 text-[11px] text-slate-600 outline-none transition hover:border-blue-200 focus:border-[#0757ff] focus:ring-2 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:focus:border-blue-500 dark:hover:border-blue-800"
-													defaultValue=""
-												>
-													<option disabled value="">
-														Select Action
-													</option>
-
-													<option value="view">View</option>
-													<option value="edit">Edit</option>
-													<option value="upload">Upload</option>
-													<option value="delete">Delete</option>
-												</select>
+									{Boolean(isLoading) && (
+										<tr>
+											<td
+												className="px-4 py-12 text-center text-slate-400"
+												colSpan={4}
+											>
+												Loading lead lists...
 											</td>
 										</tr>
-									))}
+									)}
+									{Boolean(error) && (
+										<tr>
+											<td
+												className="px-4 py-12 text-center text-red-500"
+												colSpan={4}
+											>
+												Unable to load lead lists.
+											</td>
+										</tr>
+									)}
+									{!(isLoading || error) &&
+										visibleLists.map((item, index) => (
+											<tr
+												className="border-slate-100 border-b transition-colors last:border-0 hover:bg-blue-50/30 dark:border-slate-800 dark:hover:bg-blue-950/30"
+												key={item.id}
+											>
+												<td className="px-4 py-3 font-medium text-slate-400 dark:text-slate-500">
+													{startIndex + index + 1}
+												</td>
 
-									{visibleLists.length === 0 && (
+												<td className="px-4 py-3">
+													<div className="flex items-center gap-2.5">
+														<div className="flex size-8 items-center justify-center rounded-lg bg-blue-50 text-[#0757ff] dark:bg-blue-950/60 dark:text-blue-400">
+															<List className="size-3.5" />
+														</div>
+
+														<button
+															className="font-semibold text-[#0757ff] hover:underline dark:text-blue-400"
+															onClick={() => navigateToDetails(item.id)}
+															type="button"
+														>
+															{item.name}
+														</button>
+													</div>
+												</td>
+
+												<td className="px-4 py-3 text-slate-500 dark:text-slate-400">
+													{item.description}
+												</td>
+
+												<td className="px-4 py-3">
+													<select
+														className="h-8 min-w-[125px] rounded-lg border border-slate-200 bg-white px-2 text-[11px] text-slate-600 outline-none transition hover:border-blue-200 focus:border-[#0757ff] focus:ring-2 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:focus:border-blue-500 dark:hover:border-blue-800"
+														defaultValue=""
+														onChange={(event) => {
+															handleAction(event.target.value, item);
+															event.target.value = "";
+														}}
+													>
+														<option disabled value="">
+															Select Action
+														</option>
+
+														<option value="view">View</option>
+														<option value="edit">Edit</option>
+														<option value="upload">Upload</option>
+														<option value="delete">Delete</option>
+													</select>
+												</td>
+											</tr>
+										))}
+
+									{!(isLoading || error) && visibleLists.length === 0 && (
 										<tr>
 											<td
 												className="px-4 py-12 text-center text-slate-400 dark:text-slate-500"
@@ -422,6 +481,31 @@ function ManageLeadsPage() {
 					</div>
 				</div>
 			</main>
+			<AlertDialog
+				onOpenChange={(open) => {
+					if (!open) {
+						setLeadListToDelete(undefined);
+					}
+				}}
+				open={Boolean(leadListToDelete)}
+			>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Delete lead list?</AlertDialogTitle>
+						<AlertDialogDescription>{`This will permanently remove ${leadListToDelete?.name ?? "this lead list"}.`}</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel>Cancel</AlertDialogCancel>
+						<AlertDialogAction
+							disabled={deleteMutation.isPending}
+							onClick={confirmDelete}
+							variant="destructive"
+						>
+							Delete
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
 		</div>
 	);
 }

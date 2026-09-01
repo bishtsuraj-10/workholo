@@ -61,11 +61,12 @@ function getServerUrl(url: string) {
 	return `http://localhost:3000${normalized}`;
 }
 export const link = new RPCLink({
-	fetch(url, options) {
-		return window.fetch(url, {
-			...options,
-			credentials: "include",
-		});
+	fetch(request) {
+		return window.fetch(
+			new Request(request, {
+				credentials: "include",
+			})
+		);
 	},
 	url: `${getServerUrl(env.VITE_SERVER_URL)}/rpc`,
 });

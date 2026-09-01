@@ -7,6 +7,7 @@ import { departmentsRouter } from "./departments";
 import { dialerCampaignsRouter } from "./dialer-campaigns";
 import { inboundQueuesRouter } from "./inbound-queues";
 import { leadListsRouter } from "./lead-lists";
+import { leadsRouter } from "./leads";
 import { platformUsersRouter } from "./platform-users";
 import { usersRouter } from "./users";
 
@@ -18,6 +19,7 @@ export const appRouter = {
 	healthCheck: publicProcedure.handler(() => "OK"),
 	inboundQueues: inboundQueuesRouter,
 	leadLists: leadListsRouter,
+	leads: leadsRouter,
 	platformUsers: platformUsersRouter,
 	privateData: protectedProcedure.handler(({ context }) => ({
 		message: "This is private",

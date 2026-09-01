@@ -14,6 +14,8 @@ import {
 	UsersRound,
 } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
+import { authClient } from "@/lib/auth-client";
 
 export const Route = createFileRoute("/admin/login")({
 	component: AdminLoginPage,
@@ -25,12 +27,26 @@ function AdminLoginPage() {
 	const [showPassword, setShowPassword] = useState(false);
 	const [loginId, setLoginId] = useState("");
 	const [password, setPassword] = useState("");
+	const [isSubmitting, setIsSubmitting] = useState(false);
 
-	function handleLogin() {
-		// Authentication will be connected later.
-		if (loginId && password) {
-			navigate({ to: "/admin" });
+	async function handleLogin() {
+		if (!(loginId.trim() && password.trim())) {
+			return;
 		}
+
+		setIsSubmitting(true);
+		const { error } = await authClient.signIn.email({
+			email: loginId.trim(),
+			password,
+		});
+		setIsSubmitting(false);
+
+		if (error) {
+			toast.error(error.message ?? "Unable to sign in.");
+			return;
+		}
+
+		navigate({ to: "/admin" });
 	}
 
 	return (
@@ -360,10 +376,11 @@ function AdminLoginPage() {
 								{/* Login */}
 								<Button
 									className="h-12 w-full rounded-lg bg-[#0757ff] font-semibold text-xs shadow-blue-500/20 shadow-md transition-all hover:-translate-y-0.5 hover:bg-[#004be0] hover:shadow-blue-500/25 hover:shadow-lg active:translate-y-0"
+									disabled={isSubmitting}
 									onClick={handleLogin}
 									type="button"
 								>
-									Login to Dashboard
+									{isSubmitting ? "Signing in..." : "Login to Dashboard"}
 								</Button>
 							</div>
 

@@ -1,54 +1,110 @@
 // biome-ignore-all lint/performance/noJsxPropsBind: Form controls use local component state.
 
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Button } from "@workholo/ui/components/button";
 import { Input } from "@workholo/ui/components/input";
 import { HelpCircle, Plus, X } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 
 import { AdminTopbar } from "@/components/admin/admin-topbar";
+import { queryClient, queryUtils } from "@/utils/orpc";
+
+type LeadListField = { id: number; name: string; sensitive: boolean };
+const defaultFields: LeadListField[] = [
+	{ id: 0, name: "Phone Number", sensitive: false },
+	{ id: 1, name: "Name", sensitive: false },
+	{ id: 2, name: "Email Id", sensitive: false },
+	{ id: 3, name: "Address", sensitive: false },
+	{ id: 4, name: "Company Name", sensitive: false },
+	{ id: 5, name: "", sensitive: false },
+];
 
 export const Route = createFileRoute("/admin/add-list")({
+	validateSearch: (search: Record<string, unknown>) => ({
+		edit: typeof search.edit === "string" ? search.edit : undefined,
+	}),
 	component: AddListPage,
 });
 
-type LeadField = {
-	id: number;
-	value: string;
-};
-
-const initialFields: LeadField[] = [
-	{ id: 0, value: "Phone Number" },
-	{ id: 1, value: "Name" },
-	{ id: 2, value: "Email Id" },
-	{ id: 3, value: "Address" },
-	{ id: 4, value: "Company Name" },
-	{ id: 5, value: "" },
-];
-
 function AddListPage() {
-	const navigate = useNavigate();
+	const { edit } = Route.useSearch();
+	const {
+		data: leadList,
+		error,
+		isLoading,
+	} = useQuery(
+		queryUtils.leadLists.getById.queryOptions({
+			input: { id: edit ?? "" },
+			enabled: Boolean(edit),
+		})
+	);
+	if (isLoading) {
+		return <div className="p-6">Loading lead list...</div>;
+	}
+	if (error) {
+		return <div className="p-6 text-red-500">Unable to load lead list.</div>;
+	}
+	return (
+		<LeadListForm
+			key={leadList?.id ?? "new"}
+			leadList={leadList ?? undefined}
+		/>
+	);
+}
 
-	const [name, setName] = useState("");
-	const [description, setDescription] = useState("");
-	const [sharedWith, setSharedWith] = useState("32 selected");
-	const [skillBasedRouting, setSkillBasedRouting] = useState(false);
-	const [fields, setFields] = useState<LeadField[]>(initialFields);
-	const [sensitiveFields, setSensitiveFields] = useState<number[]>([]);
+function LeadListForm({
+	leadList,
+}: {
+	leadList?: {
+		id: string;
+		name: string;
+		description: string;
+		sharedWith: string;
+		skillBasedRouting: boolean;
+		fields: { name: string; position: number; sensitive: boolean }[];
+	};
+}) {
+	const navigate = useNavigate();
+	const initialForm = leadList ?? {
+		description: "",
+		fields: defaultFields.map(({ id, name: fieldName, sensitive }) => ({
+			name: fieldName,
+			position: id,
+			sensitive,
+		})),
+		name: "",
+		sharedWith: "32 selected",
+		skillBasedRouting: false,
+	};
+	const [name, setName] = useState(initialForm.name);
+	const [description, setDescription] = useState(initialForm.description);
+	const [sharedWith, setSharedWith] = useState(initialForm.sharedWith);
+	const [skillBasedRouting, setSkillBasedRouting] = useState(
+		initialForm.skillBasedRouting
+	);
+	const [fields, setFields] = useState<LeadListField[]>(() =>
+		initialForm.fields.map((field) => ({
+			id: field.position,
+			name: field.name,
+			sensitive: field.sensitive,
+		}))
+	);
 
 	const updateField = (id: number, value: string) => {
 		setFields((currentFields) =>
 			currentFields.map((field) =>
-				field.id === id ? { ...field, value } : field
+				field.id === id ? { ...field, name: value } : field
 			)
 		);
 	};
 
 	const toggleSensitive = (id: number) => {
-		setSensitiveFields((current) =>
-			current.includes(id)
-				? current.filter((fieldId) => fieldId !== id)
-				: [...current, id]
+		setFields((current) =>
+			current.map((field) =>
+				field.id === id ? { ...field, sensitive: !field.sensitive } : field
+			)
 		);
 	};
 
@@ -60,7 +116,8 @@ function AddListPage() {
 			...currentFields,
 			{
 				id: nextId,
-				value: "",
+				name: "",
+				sensitive: false,
 			},
 		]);
 	};
@@ -73,21 +130,48 @@ function AddListPage() {
 		setFields((currentFields) =>
 			currentFields.filter((field) => field.id !== id)
 		);
-
-		setSensitiveFields((current) =>
-			current.filter((fieldId) => fieldId !== id)
-		);
 	};
+	const createMutation = useMutation(
+		queryUtils.leadLists.create.mutationOptions()
+	);
+	const updateMutation = useMutation(
+		queryUtils.leadLists.update.mutationOptions()
+	);
 
-	const handleSave = () => {
-		console.log({
-			name,
+	const isSaving = createMutation.isPending || updateMutation.isPending;
+	const handleSave = async () => {
+		if (!name.trim()) {
+			return;
+		}
+		const leadListFields = {
 			description,
+			fields: fields.map((field, position) => ({
+				name: field.name || `Field ${position}`,
+				position,
+				sensitive: field.sensitive,
+			})),
+			name: name.trim(),
 			sharedWith,
 			skillBasedRouting,
-			fields,
-			sensitiveFields,
-		});
+		};
+		try {
+			if (leadList) {
+				await updateMutation.mutateAsync({
+					...leadListFields,
+					id: leadList.id,
+				});
+			} else {
+				await createMutation.mutateAsync(leadListFields);
+			}
+			await queryClient.invalidateQueries({
+				queryKey: queryUtils.leadLists.getAll.queryKey(),
+			});
+			navigate({ to: "/admin/manage-leads" });
+		} catch (error) {
+			toast.error(
+				error instanceof Error ? error.message : "Unable to save lead list."
+			);
+		}
 	};
 
 	return (
@@ -107,7 +191,7 @@ function AddListPage() {
 
 								<div>
 									<h1 className="font-semibold text-[#263b5b] text-sm dark:text-slate-100">
-										Add Lead List
+										{leadList ? "Edit Lead List" : "Add Lead List"}
 									</h1>
 
 									<p className="mt-0.5 text-[10px] text-slate-400 dark:text-slate-500">
@@ -267,7 +351,7 @@ function AddListPage() {
 																	: "Enter field name"
 															}
 															readOnly={field.id === 0}
-															value={field.value}
+															value={field.name}
 														/>
 
 														<HelpCircle className="absolute top-1/2 right-3 size-3.5 -translate-y-1/2 text-slate-400" />
@@ -275,7 +359,7 @@ function AddListPage() {
 
 													<div className="mt-2 flex items-center gap-2">
 														<input
-															checked={sensitiveFields.includes(field.id)}
+															checked={field.sensitive}
 															className="size-3.5 rounded border-slate-300 accent-[#0757ff]"
 															id={`sensitive-${field.id}`}
 															onChange={() => toggleSensitive(field.id)}
@@ -313,8 +397,10 @@ function AddListPage() {
 							<div className="mt-7 flex items-center gap-2 border-slate-200 border-t pt-5 dark:border-slate-800">
 								<Button
 									className="h-9 rounded-lg bg-[#0757ff] px-5 text-[11px] shadow-blue-500/15 shadow-sm hover:bg-[#004be0] dark:bg-blue-600 dark:hover:bg-blue-500"
+									disabled={!name.trim() || isSaving}
 									onClick={handleSave}
 									size="sm"
+									type="button"
 								>
 									SAVE
 								</Button>

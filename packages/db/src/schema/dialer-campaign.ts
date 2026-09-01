@@ -6,6 +6,8 @@ import {
 	timestamp,
 } from "drizzle-orm/pg-core";
 
+import { leadList } from "./lead-list";
+
 export const dialerCampaign = pgTable("dialer_campaign", {
 	accountTimezone: text("account_timezone").default("Asia/Kolkata").notNull(),
 	addTransferList: text("add_transfer_list")
@@ -46,6 +48,9 @@ export const dialerCampaign = pgTable("dialer_campaign", {
 		.default("Select an option")
 		.notNull(),
 	id: text("id").primaryKey(),
+	leadListId: text("lead_list_id").references(() => leadList.id, {
+		onDelete: "set null",
+	}),
 	manualDialLimit: integer("manual_dial_limit").default(0).notNull(),
 	name: text("name").notNull(),
 	previewDuration: integer("preview_duration").default(10).notNull(),

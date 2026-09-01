@@ -1,6 +1,17 @@
 // biome-ignore-all lint/performance/noJsxPropsBind: Table controls use local component state.
 
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "@workholo/ui/components/alert-dialog";
 import { Button } from "@workholo/ui/components/button";
 import { Input } from "@workholo/ui/components/input";
 import {
@@ -14,106 +25,48 @@ import {
 import { useMemo, useState } from "react";
 
 import { AdminTopbar } from "@/components/admin/admin-topbar";
+import { queryClient, queryUtils } from "@/utils/orpc";
 
 export const Route = createFileRoute("/admin/show-inbound-queue")({
 	component: ShowInboundQueuePage,
 });
 
-type InboundQueue = {
-	id: number;
-	name: string;
-	description: string;
-	strategy: string;
-	queueTimeout: number;
-};
-
-const inboundQueues: InboundQueue[] = [
-	{
-		id: 1,
-		name: "it team",
-		description: "team",
-		strategy: "Random",
-		queueTimeout: 90,
-	},
-	{
-		id: 2,
-		name: "All Inbound",
-		description: "All Inbound",
-		strategy: "Longest Wait Time",
-		queueTimeout: 600,
-	},
-	{
-		id: 3,
-		name: "CRM KC",
-		description: "CRM KC",
-		strategy: "Longest Wait Time",
-		queueTimeout: 200,
-	},
-	{
-		id: 4,
-		name: "CRLD KC",
-		description: "CRLD KC",
-		strategy: "Longest Wait Time",
-		queueTimeout: 200,
-	},
-	{
-		id: 5,
-		name: "CRLB KC",
-		description: "CRLB KC",
-		strategy: "Longest Wait Time",
-		queueTimeout: 200,
-	},
-	{
-		id: 6,
-		name: "CRLA KC",
-		description: "CRLA KC",
-		strategy: "Longest Wait Time",
-		queueTimeout: 200,
-	},
-	{
-		id: 7,
-		name: "NLPC Backend",
-		description: "NLPC Backend",
-		strategy: "Longest Wait Time",
-		queueTimeout: 200,
-	},
-	{
-		id: 8,
-		name: "HRD Inbound",
-		description: "HRD Inbound",
-		strategy: "Longest Wait Time",
-		queueTimeout: 200,
-	},
-	{
-		id: 9,
-		name: "NLPC Inbound",
-		description: "NLPC Inbound",
-		strategy: "Longest Wait Time",
-		queueTimeout: 200,
-	},
-];
-
 function ShowInboundQueuePage() {
 	const navigate = useNavigate();
-
+	const {
+		data: queues = [],
+		error,
+		isLoading,
+	} = useQuery(queryUtils.inboundQueues.getAll.queryOptions());
 	const [search, setSearch] = useState("");
 	const [pageSize, setPageSize] = useState(10);
 	const [currentPage, setCurrentPage] = useState(1);
+	const [queueToDelete, setQueueToDelete] = useState<(typeof queues)[number]>();
+	const deleteMutation = useMutation(
+		queryUtils.inboundQueues.delete.mutationOptions({
+			onSuccess: async () => {
+				await queryClient.invalidateQueries({
+					queryKey: queryUtils.inboundQueues.getAll.queryKey(),
+				});
+				setQueueToDelete(undefined);
+			},
+		})
+	);
 
 	const filteredQueues = useMemo(() => {
 		const value = search.trim().toLowerCase();
 
 		if (!value) {
-			return inboundQueues;
+			return queues;
 		}
 
-		return inboundQueues.filter((queue) =>
-			[queue.name, queue.description, queue.strategy, queue.queueTimeout]
+		return queues.filter((queue) =>
+			[queue.name, queue.description, queue.ringStrategy, queue.queueTimeout]
 				.join(" ")
 				.toLowerCase()
 				.includes(value)
 		);
-	}, [search]);
+	}, [queues, search]);
 
 	const totalPages = Math.max(1, Math.ceil(filteredQueues.length / pageSize));
 
@@ -131,16 +84,32 @@ function ShowInboundQueuePage() {
 		setCurrentPage((page) => Math.min(totalPages, page + 1));
 	};
 
-	const totalQueues = inboundQueues.length;
+	const totalQueues = queues.length;
 
-	const longestWaitQueues = inboundQueues.filter(
-		(queue) => queue.strategy === "Longest Wait Time"
+	const longestWaitQueues = queues.filter(
+		(queue) => queue.ringStrategy === "Longest Wait Time"
 	).length;
 
-	const averageTimeout = Math.round(
-		inboundQueues.reduce((sum, queue) => sum + queue.queueTimeout, 0) /
-			inboundQueues.length
-	);
+	const averageTimeout = queues.length
+		? Math.round(
+				queues.reduce((sum, queue) => sum + queue.queueTimeout, 0) /
+					queues.length
+			)
+		: 0;
+	const handleAction = (action: string, queue: (typeof queues)[number]) => {
+		if (action === "edit") {
+			navigate({ to: "/admin/add-inbound-queue", search: { edit: queue.id } });
+		}
+		if (action === "delete") {
+			setQueueToDelete(queue);
+		}
+	};
+	const deleteQueue = () => {
+		if (!queueToDelete) {
+			return;
+		}
+		deleteMutation.mutate({ id: queueToDelete.id });
+	};
 
 	return (
 		<div className="min-h-svh bg-[#eef3f9] text-slate-900 dark:bg-[#0b1220] dark:text-slate-100">
@@ -171,6 +140,7 @@ function ShowInboundQueuePage() {
 							onClick={() =>
 								navigate({
 									to: "/admin/add-inbound-queue",
+									search: { edit: undefined },
 								})
 							}
 							type="button"
@@ -307,65 +277,89 @@ function ShowInboundQueuePage() {
 								</thead>
 
 								<tbody>
-									{visibleQueues.map((queue) => (
-										<tr
-											className="border-slate-100 border-b transition-colors last:border-0 hover:bg-blue-50/30 dark:border-slate-800 dark:hover:bg-blue-500/5"
-											key={queue.id}
-										>
-											<td className="px-4 py-3 font-medium text-slate-400">
-												{queue.id}.
-											</td>
-
-											<td className="px-4 py-3">
-												<div className="flex items-center gap-2.5">
-													<div className="flex size-8 items-center justify-center rounded-lg bg-blue-50 text-[#0757ff] dark:bg-blue-500/10 dark:text-blue-400">
-														<Users className="size-3.5" />
-													</div>
-
-													<div className="font-semibold text-[#263b5b] dark:text-slate-200">
-														{queue.name}
-													</div>
-												</div>
-											</td>
-
-											<td className="px-4 py-3 text-slate-500 dark:text-slate-400">
-												{queue.description}
-											</td>
-
-											<td className="px-4 py-3">
-												<span className="inline-flex rounded-full bg-indigo-50 px-2.5 py-1 font-medium text-[10px] text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400">
-													{queue.strategy}
-												</span>
-											</td>
-
-											<td className="px-4 py-3">
-												<div className="flex items-center gap-2">
-													<Clock3 className="size-3.5 text-slate-400" />
-
-													<span className="font-semibold text-[#102b55] dark:text-slate-200">
-														{queue.queueTimeout}s
-													</span>
-												</div>
-											</td>
-
-											<td className="px-4 py-3">
-												<select
-													className="h-8 min-w-[125px] rounded-lg border border-slate-200 bg-white px-2 text-[11px] text-slate-600 outline-none transition hover:border-blue-200 focus:border-[#0757ff] focus:ring-2 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-[#0b1220] dark:text-slate-300 dark:hover:border-blue-500/50"
-													defaultValue=""
-												>
-													<option disabled value="">
-														Select Action
-													</option>
-
-													<option value="view">View</option>
-													<option value="edit">Edit</option>
-													<option value="delete">Delete</option>
-												</select>
+									{Boolean(isLoading) && (
+										<tr>
+											<td
+												className="px-4 py-12 text-center text-slate-400"
+												colSpan={6}
+											>
+												Loading inbound queues...
 											</td>
 										</tr>
-									))}
+									)}
+									{Boolean(error) && (
+										<tr>
+											<td
+												className="px-4 py-12 text-center text-red-500"
+												colSpan={6}
+											>
+												Unable to load inbound queues.
+											</td>
+										</tr>
+									)}
+									{!(isLoading || error) &&
+										visibleQueues.map((queue, index) => (
+											<tr
+												className="border-slate-100 border-b transition-colors last:border-0 hover:bg-blue-50/30 dark:border-slate-800 dark:hover:bg-blue-500/5"
+												key={queue.id}
+											>
+												<td className="px-4 py-3 font-medium text-slate-400">
+													{startIndex + index + 1}.
+												</td>
 
-									{visibleQueues.length === 0 && (
+												<td className="px-4 py-3">
+													<div className="flex items-center gap-2.5">
+														<div className="flex size-8 items-center justify-center rounded-lg bg-blue-50 text-[#0757ff] dark:bg-blue-500/10 dark:text-blue-400">
+															<Users className="size-3.5" />
+														</div>
+
+														<div className="font-semibold text-[#263b5b] dark:text-slate-200">
+															{queue.name}
+														</div>
+													</div>
+												</td>
+
+												<td className="px-4 py-3 text-slate-500 dark:text-slate-400">
+													{queue.description}
+												</td>
+
+												<td className="px-4 py-3">
+													<span className="inline-flex rounded-full bg-indigo-50 px-2.5 py-1 font-medium text-[10px] text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400">
+														{queue.ringStrategy}
+													</span>
+												</td>
+
+												<td className="px-4 py-3">
+													<div className="flex items-center gap-2">
+														<Clock3 className="size-3.5 text-slate-400" />
+
+														<span className="font-semibold text-[#102b55] dark:text-slate-200">
+															{queue.queueTimeout}s
+														</span>
+													</div>
+												</td>
+
+												<td className="px-4 py-3">
+													<select
+														className="h-8 min-w-[125px] rounded-lg border border-slate-200 bg-white px-2 text-[11px] text-slate-600 outline-none transition hover:border-blue-200 focus:border-[#0757ff] focus:ring-2 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-[#0b1220] dark:text-slate-300 dark:hover:border-blue-500/50"
+														defaultValue=""
+														onChange={(event) => {
+															handleAction(event.target.value, queue);
+															event.target.value = "";
+														}}
+													>
+														<option disabled value="">
+															Select Action
+														</option>
+
+														<option value="edit">Edit</option>
+														<option value="delete">Delete</option>
+													</select>
+												</td>
+											</tr>
+										))}
+
+									{!(isLoading || error) && visibleQueues.length === 0 && (
 										<tr>
 											<td
 												className="px-4 py-12 text-center text-slate-400"
@@ -460,6 +454,31 @@ function ShowInboundQueuePage() {
 					</div>
 				</div>
 			</main>
+			<AlertDialog
+				onOpenChange={(open) => {
+					if (!open) {
+						setQueueToDelete(undefined);
+					}
+				}}
+				open={Boolean(queueToDelete)}
+			>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Delete inbound queue?</AlertDialogTitle>
+						<AlertDialogDescription>{`This will permanently remove ${queueToDelete?.name ?? "this queue"}.`}</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel>Cancel</AlertDialogCancel>
+						<AlertDialogAction
+							disabled={deleteMutation.isPending}
+							onClick={deleteQueue}
+							variant="destructive"
+						>
+							Delete
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
 		</div>
 	);
 }

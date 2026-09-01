@@ -1,383 +1,394 @@
 // biome-ignore-all lint/performance/noJsxPropsBind: Wizard controls intentionally use component state.
 
-import { createFileRoute } from "@tanstack/react-router";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Button } from "@workholo/ui/components/button";
 import { Input } from "@workholo/ui/components/input";
 import { ChevronRight, PhoneCall } from "lucide-react";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
+import { toast } from "sonner";
 
 import { AdminTopbar } from "@/components/admin/admin-topbar";
+import { queryClient, queryUtils } from "@/utils/orpc";
 
 export const Route = createFileRoute("/admin/add-dialer-campaign")({
+	validateSearch: (search: Record<string, unknown>) => ({
+		edit: typeof search.edit === "string" ? search.edit : undefined,
+	}),
 	component: AddDialerCampaignPage,
 });
 
-const steps = [
-	"1. Basic Settings",
-	"2. Agent Settings",
-	"3. Advanced Settings (Optional)",
+type Fields = {
+	accountTimezone: string;
+	addTransferList: string;
+	afterCallDisposition: string;
+	afterCallWorkDuration: number;
+	agent: string;
+	agentConnectionMethod: string;
+	agentDialInNumber: string;
+	agentOnlyCallback: boolean;
+	agentVoiceGreeting: string;
+	callerIdType: string;
+	callsBeforeRingDuration: number;
+	campaignCallerId: string;
+	campaignScript: string;
+	description: string;
+	dialMethod: string;
+	dialStatus: string;
+	dispositionList: string;
+	enableInbound: boolean;
+	enableManualDial: boolean;
+	enforceAgentPauseCode: boolean;
+	holidayCalendar: string;
+	leadListId: string | null;
+	manualDialLimit: number;
+	name: string;
+	previewDuration: number;
+	refreshCount: number;
+	refreshInterval: string;
+	ringTimeout: number;
+	timeGroup: string;
+	webform: string;
+	wrapUpTime: number;
+};
+const emptyCampaign = (): Fields => ({
+	accountTimezone: "Asia/Kolkata",
+	addTransferList: "Select an option",
+	afterCallDisposition: "Select an option",
+	afterCallWorkDuration: 0,
+	agent: "Select options",
+	agentConnectionMethod: "Dial In (Session)",
+	agentDialInNumber: "",
+	agentOnlyCallback: false,
+	agentVoiceGreeting: "Select an option",
+	callerIdType: "Select an option",
+	callsBeforeRingDuration: 30,
+	campaignCallerId: "Select options",
+	campaignScript: "Select an option",
+	description: "",
+	dialMethod: "Preview",
+	dialStatus: "New",
+	dispositionList: "CRLAB",
+	enableInbound: false,
+	enableManualDial: false,
+	enforceAgentPauseCode: false,
+	holidayCalendar: "Select an option",
+	leadListId: null,
+	manualDialLimit: 0,
+	name: "",
+	previewDuration: 10,
+	refreshCount: 1,
+	refreshInterval: "00:00:30",
+	ringTimeout: 30,
+	timeGroup: "Select Time Group",
+	webform: "Select Webform",
+	wrapUpTime: 30,
+});
+type FieldKey = keyof Fields;
+type Field = {
+	key: FieldKey;
+	label: string;
+	options?: string[];
+	type?: "number" | "toggle";
+};
+const basicFields: Field[] = [
+	{ key: "name", label: "Name*" },
+	{
+		key: "dialMethod",
+		label: "Dial Method*",
+		options: ["Preview", "Progressive", "Predictive"],
+	},
+	{
+		key: "dispositionList",
+		label: "Disposition List*",
+		options: ["CRLAB", "CRM", "CRLA", "CRLB"],
+	},
+	{ key: "wrapUpTime", label: "Wrap Up Time (In Seconds)*", type: "number" },
+	{ key: "refreshCount", label: "Refresh Count", type: "number" },
+	{
+		key: "afterCallWorkDuration",
+		label: "After Call Work Duration (In Seconds)*",
+		type: "number",
+	},
+	{ key: "description", label: "Description" },
+	{
+		key: "previewDuration",
+		label: "Preview Duration (In Seconds)*",
+		type: "number",
+	},
+	{
+		key: "campaignCallerId",
+		label: "Campaign Caller ID*",
+		options: ["Select options", "+918064370287", "+917965369371"],
+	},
+	{ key: "leadListId", label: "Lead List" },
+	{
+		key: "dialStatus",
+		label: "Dial Status*",
+		options: ["New", "Pending", "Completed"],
+	},
+	{ key: "refreshInterval", label: "Refresh Interval (DD:HH:MM)" },
 ];
-
-function getStepClass(stepNumber: number, currentStep: number) {
-	if (stepNumber === currentStep) {
-		return "bg-[#0757ff] text-white shadow-blue-500/20 shadow-sm dark:bg-blue-600";
-	}
-
-	if (stepNumber < currentStep) {
-		return "bg-blue-50 text-[#0757ff] dark:bg-blue-950/60 dark:text-blue-400";
-	}
-
-	return "border border-slate-200 bg-slate-50 text-slate-500 hover:border-blue-200 hover:bg-blue-50/50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-400 dark:hover:border-blue-800 dark:hover:bg-blue-950/30";
-}
-
-function getStepNumberClass(stepNumber: number, currentStep: number) {
-	if (stepNumber === currentStep) {
-		return "bg-white/20 text-white";
-	}
-
-	if (stepNumber < currentStep) {
-		return "bg-blue-100 text-[#0757ff] dark:bg-blue-900 dark:text-blue-400";
-	}
-
-	return "bg-slate-200 text-slate-500 dark:bg-slate-800 dark:text-slate-400";
-}
+const agentFields: Field[] = [
+	{
+		key: "agentConnectionMethod",
+		label: "Agent Connection Method*",
+		options: ["Dial In (Session)", "Browser", "Auto Connect"],
+	},
+	{
+		key: "enforceAgentPauseCode",
+		type: "toggle",
+		label: "Enforce Agent Pause Code",
+	},
+	{ key: "agentDialInNumber", label: "Agent Dial-In Number*" },
+	{
+		key: "agent",
+		label: "Agent*",
+		options: ["Select options", "Meera", "CRLA Zainab", "CRLA Tasneem"],
+	},
+	{ key: "ringTimeout", label: "Ring Timeout (In Seconds)*", type: "number" },
+	{ key: "agentOnlyCallback", label: "Agent Only Callback", type: "toggle" },
+];
+const advancedFields: Field[] = [
+	{
+		key: "agentVoiceGreeting",
+		label: "Agent Voice Greeting",
+		options: ["Select an option", "Default", "Custom Greeting"],
+	},
+	{
+		key: "callerIdType",
+		label: "Caller ID Type",
+		options: ["Select an option", "Random", "Fixed"],
+	},
+	{
+		key: "campaignScript",
+		label: "Campaign Script",
+		options: ["Select an option", "Default"],
+	},
+	{
+		key: "timeGroup",
+		label: "Time Group",
+		options: ["Select Time Group", "Business Hours", "24x7"],
+	},
+	{
+		key: "accountTimezone",
+		label: "Account Timezone",
+		options: ["Asia/Kolkata", "UTC", "Asia/Dubai"],
+	},
+	{
+		key: "addTransferList",
+		label: "Add Transfer List",
+		options: ["Select an option", "Default List"],
+	},
+	{
+		key: "afterCallDisposition",
+		label: "After Call Disposition",
+		options: ["Select an option", "Automatic"],
+	},
+	{
+		key: "holidayCalendar",
+		label: "Holiday Calendar",
+		options: ["Select an option", "Default Calendar"],
+	},
+	{
+		key: "enableManualDial",
+		type: "toggle",
+		label: "Enable Manual Dial",
+	},
+	{ key: "manualDialLimit", label: "Manual Dial Limit", type: "number" },
+	{ key: "enableInbound", label: "Enable Inbound", type: "toggle" },
+	{ key: "webform", label: "Webform" },
+	{
+		key: "callsBeforeRingDuration",
+		label: "Calls before Ring Duration (In Seconds)",
+		type: "number",
+	},
+];
+const stepDetails = [
+	{
+		title: "Basic Settings",
+		description: "Configure the basic campaign information.",
+		fields: basicFields,
+	},
+	{
+		title: "Agent Settings",
+		description: "Configure how agents connect to the campaign.",
+		fields: agentFields,
+	},
+	{
+		title: "Advanced Settings (Optional)",
+		description: "Optional campaign configuration.",
+		fields: advancedFields,
+	},
+] as const;
 
 function AddDialerCampaignPage() {
-	const [step, setStep] = useState(1);
-
-	const goNext = () => {
-		setStep((current) => Math.min(3, current + 1));
+	const { edit } = Route.useSearch();
+	const {
+		data: campaign,
+		error,
+		isLoading,
+	} = useQuery(
+		queryUtils.dialerCampaigns.getById.queryOptions({
+			input: { id: edit ?? "" },
+			enabled: Boolean(edit),
+		})
+	);
+	if (isLoading) {
+		return <div className="p-6">Loading campaign...</div>;
+	}
+	if (error) {
+		return <div className="p-6 text-red-500">Unable to load campaign.</div>;
+	}
+	return (
+		<DialerCampaignForm
+			campaign={campaign ?? undefined}
+			key={campaign?.id ?? "new"}
+			mode={edit ? "edit" : "create"}
+		/>
+	);
+}
+function DialerCampaignForm({
+	campaign,
+	mode,
+}: {
+	campaign?: Fields & { id: string };
+	mode: "create" | "edit";
+}) {
+	const navigate = useNavigate();
+	const [step, setStep] = useState(0);
+	const [form, setForm] = useState<Fields>(() => {
+		if (!campaign) {
+			return emptyCampaign();
+		}
+		const { id: _id, ...fields } = campaign;
+		return fields;
+	});
+	const update = <Key extends FieldKey>(key: Key, value: Fields[Key]) =>
+		setForm((current) => ({ ...current, [key]: value }));
+	const { data: leadLists = [] } = useQuery(
+		queryUtils.leadLists.getAll.queryOptions()
+	);
+	const createMutation = useMutation(
+		queryUtils.dialerCampaigns.create.mutationOptions()
+	);
+	const updateMutation = useMutation(
+		queryUtils.dialerCampaigns.update.mutationOptions()
+	);
+	const isSaving = createMutation.isPending || updateMutation.isPending;
+	const save = async () => {
+		if (!form.name.trim()) {
+			return;
+		}
+		try {
+			if (campaign) {
+				await updateMutation.mutateAsync({ ...form, id: campaign.id });
+			} else {
+				await createMutation.mutateAsync(form);
+			}
+			await queryClient.invalidateQueries({
+				queryKey: queryUtils.dialerCampaigns.getAll.queryKey(),
+			});
+			navigate({ to: "/admin/dialer-campaigns" });
+		} catch (error) {
+			toast.error(
+				error instanceof Error
+					? error.message
+					: "Unable to save dialer campaign."
+			);
+		}
 	};
-
-	const goPrevious = () => {
-		setStep((current) => Math.max(1, current - 1));
-	};
-
-	const cancel = () => {
-		window.history.back();
-	};
-
+	const details = stepDetails[step];
+	const title =
+		mode === "edit" ? "Change Dialer Campaign" : "Add Dialer Campaign";
 	return (
 		<div className="flex min-h-svh flex-col bg-[#eef3f9] dark:bg-slate-950">
 			<AdminTopbar />
-
 			<main className="flex-1 p-4 md:p-6">
 				<div className="mx-auto max-w-[1500px]">
 					<section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-						{/* HEADER */}
-						<div className="flex items-center gap-3 border-slate-100 border-b px-5 py-4 dark:border-slate-800">
-							<div className="flex size-9 items-center justify-center rounded-lg bg-blue-50 text-[#0757ff] dark:bg-blue-950 dark:text-blue-400">
+						<header className="flex items-center gap-3 border-slate-100 border-b px-5 py-4 dark:border-slate-800">
+							<div className="flex size-9 items-center justify-center rounded-lg bg-blue-50 text-[#0757ff]">
 								<PhoneCall className="size-4" />
 							</div>
-
 							<div>
-								<h1 className="font-bold text-[#102b55] text-lg tracking-tight dark:text-white">
-									Add Dialer Campaign
+								<h1 className="font-bold text-[#102b55] text-lg dark:text-white">
+									{title}
 								</h1>
-
-								<p className="mt-0.5 text-slate-400 text-xs dark:text-slate-500">
-									Create and configure a new dialer campaign.
+								<p className="mt-0.5 text-slate-400 text-xs">
+									Create and configure a dialer campaign.
 								</p>
 							</div>
-						</div>
-
+						</header>
 						<div className="p-5 md:p-6">
-							{/* STEP NAVIGATION */}
 							<div className="mb-5 grid gap-2 md:grid-cols-3">
-								{steps.map((item, index) => {
-									const stepNumber = index + 1;
-									const active = stepNumber === step;
-
-									return (
-										<button
-											className={`flex h-11 items-center gap-2 rounded-lg px-4 text-left font-semibold text-xs transition-all ${getStepClass(
-												stepNumber,
-												step
-											)}`}
-											key={item}
-											onClick={() => setStep(stepNumber)}
-											type="button"
-										>
-											<span
-												className={`flex size-6 shrink-0 items-center justify-center rounded-full text-[10px] ${getStepNumberClass(
-													stepNumber,
-													step
-												)}`}
-											>
-												{stepNumber}
-											</span>
-
-											<span>{item.slice(3)}</span>
-
-											{active ? (
-												<ChevronRight className="ml-auto size-3.5" />
-											) : null}
-										</button>
-									);
-								})}
+								{stepDetails.map((item, index) => (
+									<button
+										className={`flex h-11 items-center gap-2 rounded-lg px-4 text-left font-semibold text-xs ${index === step ? "bg-[#0757ff] text-white" : "border border-slate-200 bg-slate-50 text-slate-500"}`}
+										key={item.title}
+										onClick={() => setStep(index)}
+										type="button"
+									>
+										<span className="flex size-6 items-center justify-center rounded-full bg-white/20 text-[10px]">
+											{index + 1}
+										</span>
+										{item.title}
+										{index === step ? (
+											<ChevronRight className="ml-auto size-3.5" />
+										) : null}
+									</button>
+								))}
 							</div>
-
-							{/* STEP 1 */}
-							{step === 1 ? (
-								<div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800">
-									<div className="border-slate-100 border-b bg-slate-50/70 px-5 py-3 dark:border-slate-800 dark:bg-slate-950/50">
-										<h2 className="font-semibold text-[#102b55] text-sm dark:text-white">
-											Basic Settings
-										</h2>
-
-										<p className="mt-1 text-[10px] text-slate-400 dark:text-slate-500">
-											Configure the basic campaign information.
-										</p>
-									</div>
-
-									<div className="grid gap-x-8 gap-y-5 p-5 md:grid-cols-2">
-										<div className="space-y-5">
-											<Field label="Name*" />
-
-											<SelectField
-												label="Dial Method*"
-												options={["Preview", "Progressive", "Predictive"]}
-												value="Preview"
-											/>
-
-											<SelectField
-												label="Disposition List*"
-												options={["CRLAB", "CRM", "CRLA", "CRLB"]}
-												value="CRLAB"
-											/>
-
-											<Field label="Wrap Up Time (In Seconds)*" value="30" />
-
-											<Field label="Refresh Count" value="1" />
-
-											<Field
-												label="After Call Work Duration (In Seconds)*"
-												value="0"
-											/>
-										</div>
-
-										<div className="space-y-5">
-											<Field label="Description" />
-
-											<Field
-												label="Preview Duration (In Seconds)*"
-												value="10"
-											/>
-
-											<div className="grid grid-cols-[1fr_auto] gap-3">
-												<SelectField
-													label="Campaign Caller ID*"
-													options={[
-														"Select options",
-														"+918064370287",
-														"+917965369371",
-													]}
-													value="Select options"
-												/>
-
-												<Button
-													className="mt-6 h-9 border-slate-200 text-slate-600 text-xs dark:border-slate-700 dark:text-slate-300"
-													type="button"
-													variant="outline"
-												>
-													Select Lead List(s)
-												</Button>
-											</div>
-
-											<SelectField
-												label="Dial Status*"
-												options={["New", "Pending", "Completed"]}
-												value="New"
-											/>
-
-											<Field
-												label="Refresh Interval (DD:HH:MM)"
-												value="00:00:30"
-											/>
-										</div>
-									</div>
+							<CampaignSection
+								description={details.description}
+								title={details.title}
+							>
+								<div className="grid gap-x-8 gap-y-5 md:grid-cols-2">
+									{details.fields.map((field) => (
+										<CampaignField
+											field={field}
+											form={form}
+											key={field.key}
+											leadLists={leadLists.filter(
+												(leadList): leadList is NonNullable<typeof leadList> =>
+													leadList !== null
+											)}
+											update={update}
+										/>
+									))}
 								</div>
-							) : null}
-
-							{/* STEP 2 */}
-							{step === 2 ? (
-								<div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800">
-									<div className="border-slate-100 border-b bg-slate-50/70 px-5 py-3 dark:border-slate-800 dark:bg-slate-950/50">
-										<h2 className="font-semibold text-[#102b55] text-sm dark:text-white">
-											Agent Settings
-										</h2>
-
-										<p className="mt-1 text-[10px] text-slate-400 dark:text-slate-500">
-											Configure how agents connect to the campaign.
-										</p>
-									</div>
-
-									<div className="grid gap-x-8 gap-y-5 p-5 md:grid-cols-2">
-										<div className="space-y-5">
-											<SelectField
-												label="Agent Connection Method*"
-												options={[
-													"Dial In (Session)",
-													"Browser",
-													"Auto Connect",
-												]}
-												value="Dial In (Session)"
-											/>
-
-											<SelectField
-												label="Enforce Agent Pause Code"
-												options={["Disable Pause Code", "Enable Pause Code"]}
-												value="Disable Pause Code"
-											/>
-
-											<Field
-												label="Agent Dial-In Number*"
-												value="918068211299"
-											/>
-										</div>
-
-										<div className="space-y-5">
-											<SelectField
-												label="Agent*"
-												options={[
-													"Select options",
-													"Meera",
-													"CRLA Zainab",
-													"CRLA Tasneem",
-												]}
-												value="Select options"
-											/>
-
-											<Field label="Ring Timeout (In Seconds)*" value="30" />
-
-											<ToggleField label="Agent Only Callback" />
-										</div>
-									</div>
-								</div>
-							) : null}
-
-							{/* STEP 3 */}
-							{step === 3 ? (
-								<div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800">
-									<div className="border-slate-100 border-b bg-slate-50/70 px-5 py-3 dark:border-slate-800 dark:bg-slate-950/50">
-										<h2 className="font-semibold text-[#102b55] text-sm dark:text-white">
-											Advanced Settings
-										</h2>
-
-										<p className="mt-1 text-[10px] text-slate-400 dark:text-slate-500">
-											Optional campaign configuration.
-										</p>
-									</div>
-
-									<div className="grid gap-x-8 gap-y-5 p-5 md:grid-cols-2">
-										<SelectField
-											label="Agent Voice Greeting"
-											options={[
-												"Select an option",
-												"Default",
-												"Custom Greeting",
-											]}
-											value="Select an option"
-										/>
-
-										<SelectField
-											label="Caller ID Type"
-											options={["Select an option", "Random", "Fixed"]}
-											value="Select an option"
-										/>
-
-										<SelectField
-											label="Campaign Script"
-											options={["Select an option", "Default"]}
-											value="Select an option"
-										/>
-
-										<SelectField
-											label="Time Group"
-											options={["Select Time Group", "Business Hours", "24x7"]}
-											value="Select Time Group"
-										/>
-
-										<SelectField
-											label="Account Timezone"
-											options={["Asia/Kolkata", "UTC", "Asia/Dubai"]}
-											value="Asia/Kolkata"
-										/>
-
-										<SelectField
-											label="Add Transfer List"
-											options={["Select an option", "Default List"]}
-											value="Select an option"
-										/>
-
-										<SelectField
-											label="After Call Disposition"
-											options={["Select an option", "Automatic"]}
-											value="Select an option"
-										/>
-
-										<SelectField
-											label="Holiday Calendar"
-											options={["Select an option", "Default Calendar"]}
-											value="Select an option"
-										/>
-									</div>
-
-									<Section title="Manual Dial Settings">
-										<div className="grid gap-5 md:grid-cols-2">
-											<Field label="Enable Manual Dial" value="No" />
-
-											<Field label="Manual Dial Limit" value="0" />
-										</div>
-									</Section>
-
-									<Section title="Inbound Settings">
-										<ToggleField label="Enable Inbound" />
-									</Section>
-
-									<Section title="Webform Settings">
-										<Field label="Webform" value="Select Webform" />
-									</Section>
-
-									<Section title="Reporting Settings">
-										<Field
-											label="Calls before Ring Duration (In Seconds)"
-											value="30"
-										/>
-									</Section>
-								</div>
-							) : null}
-
-							{/* NAVIGATION */}
-							<div className="mt-5 flex flex-wrap justify-end gap-2">
+							</CampaignSection>
+							<div className="mt-5 flex justify-end gap-2">
 								<Button
-									className="h-9 rounded-lg border-slate-200 px-4 text-slate-600 text-xs dark:border-slate-700 dark:text-slate-300"
-									onClick={cancel}
+									onClick={() => navigate({ to: "/admin/dialer-campaigns" })}
+									type="button"
 									variant="outline"
 								>
 									Cancel
 								</Button>
-
 								<Button
-									className="h-9 rounded-lg border-slate-200 px-4 text-slate-600 text-xs dark:border-slate-700 dark:text-slate-300"
-									disabled={step === 1}
-									onClick={goPrevious}
+									disabled={step === 0}
+									onClick={() => setStep((current) => current - 1)}
+									type="button"
 									variant="outline"
 								>
 									Previous
 								</Button>
-
-								{step < 3 ? (
+								{step < 2 ? (
 									<Button
-										className="h-9 rounded-lg bg-[#0757ff] px-5 text-xs shadow-blue-500/20 shadow-sm hover:bg-[#004be0] dark:bg-blue-600 dark:hover:bg-blue-500"
-										onClick={goNext}
+										onClick={() => setStep((current) => current + 1)}
+										type="button"
 									>
 										Next
-										<ChevronRight className="ml-1 size-3.5" />
+										<ChevronRight className="size-3.5" />
 									</Button>
 								) : (
-									<Button className="h-9 rounded-lg bg-[#0757ff] px-5 text-xs shadow-blue-500/20 shadow-sm hover:bg-[#004be0] dark:bg-blue-600 dark:hover:bg-blue-500">
-										Save Campaign
+									<Button
+										disabled={!form.name.trim() || isSaving}
+										onClick={save}
+										type="button"
+									>
+										{mode === "edit" ? "Save Changes" : "Save Campaign"}
 									</Button>
 								)}
 							</div>
@@ -388,101 +399,114 @@ function AddDialerCampaignPage() {
 		</div>
 	);
 }
-
-function Field({ label, value = "" }: { label: string; value?: string }) {
-	const fieldId = `field-${label
-		.toLowerCase()
-		.replace(/[^a-z0-9]+/g, "-")
-		.replace(/^-|-$/g, "")}`;
-
-	return (
-		<div className="space-y-2">
-			<label
-				className="font-medium text-slate-500 text-xs dark:text-slate-400"
-				htmlFor={fieldId}
-			>
-				{label}
-			</label>
-
-			<Input
-				className="h-9 rounded-lg border-slate-200 bg-white text-xs placeholder:text-slate-400 focus:border-[#0757ff] focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:placeholder:text-slate-500"
-				id={fieldId}
-				readOnly={value !== ""}
-				value={value}
-			/>
-		</div>
-	);
-}
-
-function SelectField({
-	label,
-	value,
-	options,
-}: {
-	label: string;
-	value: string;
-	options: string[];
-}) {
-	const fieldId = `select-${label
-		.toLowerCase()
-		.replace(/[^a-z0-9]+/g, "-")
-		.replace(/^-|-$/g, "")}`;
-
-	return (
-		<div className="space-y-2">
-			<label
-				className="font-medium text-slate-500 text-xs dark:text-slate-400"
-				htmlFor={fieldId}
-			>
-				{label}
-			</label>
-
-			<select
-				className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-slate-600 text-xs outline-none focus:border-[#0757ff] focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300"
-				defaultValue={value}
-				id={fieldId}
-			>
-				{options.map((option) => (
-					<option key={option} value={option}>
-						{option}
-					</option>
-				))}
-			</select>
-		</div>
-	);
-}
-
-function ToggleField({ label }: { label: string }) {
-	return (
-		<div className="flex min-h-12 items-center justify-between rounded-lg border border-slate-200 bg-slate-50/50 px-4 dark:border-slate-800 dark:bg-slate-950/50">
-			<span className="font-medium text-slate-600 text-xs dark:text-slate-300">
-				{label}
-			</span>
-
-			<button
-				className="h-6 w-11 rounded-full bg-slate-200 p-1 transition-colors dark:bg-slate-700"
-				type="button"
-			>
-				<span className="block size-4 rounded-full bg-white shadow-sm dark:bg-slate-300" />
-			</button>
-		</div>
-	);
-}
-
-function Section({
-	title,
+function CampaignSection({
 	children,
+	description,
+	title,
 }: {
+	children: ReactNode;
+	description: string;
 	title: string;
-	children: React.ReactNode;
 }) {
 	return (
-		<div className="border-slate-100 border-t p-5 dark:border-slate-800">
-			<h2 className="mb-4 font-semibold text-[#102b55] text-sm dark:text-white">
-				{title}
-			</h2>
-
-			{children}
+		<section className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800">
+			<header className="border-slate-100 border-b bg-slate-50/70 px-5 py-3 dark:border-slate-800">
+				<h2 className="font-semibold text-[#102b55] text-sm dark:text-white">
+					{title}
+				</h2>
+				<p className="mt-1 text-[10px] text-slate-400">{description}</p>
+			</header>
+			<div className="p-5">{children}</div>
+		</section>
+	);
+}
+function CampaignField({
+	field,
+	form,
+	leadLists,
+	update,
+}: {
+	field: Field;
+	form: Fields;
+	leadLists: { id: string; name: string }[];
+	update: <Key extends FieldKey>(key: Key, value: Fields[Key]) => void;
+}) {
+	const id = `campaign-${field.key}`;
+	const value = form[field.key];
+	if (field.key === "leadListId") {
+		return (
+			<div className="flex flex-col gap-2">
+				<label className="font-medium text-slate-500 text-xs" htmlFor={id}>
+					{field.label}
+				</label>
+				<select
+					className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs"
+					id={id}
+					onChange={(event) => update(field.key, event.target.value || null)}
+					value={String(value ?? "")}
+				>
+					<option value="">Select lead list</option>
+					{leadLists.map((leadList) => (
+						<option key={leadList.id} value={leadList.id}>
+							{leadList.name}
+						</option>
+					))}
+				</select>
+			</div>
+		);
+	}
+	if (field.type === "toggle") {
+		return (
+			<label className="flex min-h-12 items-center justify-between rounded-lg border border-slate-200 bg-slate-50/50 px-4">
+				<span className="font-medium text-slate-600 text-xs">
+					{field.label}
+				</span>
+				<input
+					checked={Boolean(value)}
+					className="size-4 accent-[#0757ff]"
+					onChange={(event) =>
+						update(field.key, event.target.checked as Fields[typeof field.key])
+					}
+					type="checkbox"
+				/>
+			</label>
+		);
+	}
+	return (
+		<div className="flex flex-col gap-2">
+			<label className="font-medium text-slate-500 text-xs" htmlFor={id}>
+				{field.label}
+			</label>
+			{field.options ? (
+				<select
+					className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs"
+					id={id}
+					onChange={(event) =>
+						update(field.key, event.target.value as Fields[typeof field.key])
+					}
+					value={String(value)}
+				>
+					{field.options.map((option) => (
+						<option key={option} value={option}>
+							{option}
+						</option>
+					))}
+				</select>
+			) : (
+				<Input
+					id={id}
+					onChange={(event) =>
+						update(
+							field.key,
+							(field.type === "number"
+								? Number(event.target.value) || 0
+								: event.target.value) as Fields[typeof field.key]
+						)
+					}
+					type={field.type === "number" ? "number" : "text"}
+					value={String(value)}
+				/>
+			)}
 		</div>
 	);
 }

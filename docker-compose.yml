@@ -36,7 +36,7 @@ services:
         required: false
     environment:
       CORS_ORIGIN: http://localhost:3001
-      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-password}@postgres:5432/workholo
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-root123}@postgres:5432/workholo_db
     healthcheck:
       test:
         [
@@ -58,9 +58,9 @@ services:
     image: postgres:17
     container_name: workholo-postgres
     environment:
-      POSTGRES_DB: workholo
+      POSTGRES_DB: workholo_db
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-root123}
     ports:
       - "5432:5432"
     volumes:

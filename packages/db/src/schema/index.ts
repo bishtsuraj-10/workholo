@@ -4,5 +4,6 @@ export * from "./blocked-number";
 export * from "./department";
 export * from "./dialer-campaign";
 export * from "./inbound-queue";
+export * from "./lead";
 export * from "./lead-list";
 export * from "./platform-user";
