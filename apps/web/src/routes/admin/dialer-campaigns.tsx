@@ -23,7 +23,6 @@ import {
 	Users,
 } from "lucide-react";
 import { useMemo, useState } from "react";
-import { toast } from "sonner";
 
 import { AdminTopbar } from "@/components/admin/admin-topbar";
 import { queryClient, queryUtils } from "@/utils/orpc";
@@ -49,13 +48,6 @@ function DialerCampaignsPage() {
 		useState<(typeof campaigns)[number]>();
 	const deleteMutation = useMutation(
 		queryUtils.dialerCampaigns.delete.mutationOptions({
-			onError: (mutationError) => {
-				toast.error(
-					mutationError instanceof Error
-						? mutationError.message
-						: "Unable to delete dialer campaign."
-				);
-			},
 			onSuccess: async () => {
 				await queryClient.invalidateQueries({
 					queryKey: queryUtils.dialerCampaigns.getAll.queryKey(),

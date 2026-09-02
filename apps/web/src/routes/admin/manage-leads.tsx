@@ -24,7 +24,6 @@ import {
 	Upload,
 } from "lucide-react";
 import { useMemo, useState } from "react";
-import { toast } from "sonner";
 
 import { AdminTopbar } from "@/components/admin/admin-topbar";
 import { queryClient, queryUtils } from "@/utils/orpc";
@@ -47,13 +46,6 @@ function ManageLeadsPage() {
 		useState<NonNullable<(typeof leadLists)[number]>>();
 	const deleteMutation = useMutation(
 		queryUtils.leadLists.delete.mutationOptions({
-			onError: (mutationError) => {
-				toast.error(
-					mutationError instanceof Error
-						? mutationError.message
-						: "Unable to delete lead list."
-				);
-			},
 			onSuccess: async () => {
 				await queryClient.invalidateQueries({
 					queryKey: queryUtils.leadLists.getAll.queryKey(),
