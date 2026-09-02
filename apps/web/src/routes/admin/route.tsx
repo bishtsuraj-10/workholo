@@ -5,6 +5,7 @@ import {
 } from "@tanstack/react-router";
 
 import { SidebarProvider } from "@workholo/ui/components/sidebar";
+import { useState } from "react";
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
 
 export const Route = createFileRoute("/admin")({
@@ -12,6 +13,7 @@ export const Route = createFileRoute("/admin")({
 });
 
 function AdminLayout() {
+	const [isSecondarySidebarOpen, setIsSecondarySidebarOpen] = useState(false);
 	const pathname = useRouterState({
 		select: (state) => state.location.pathname,
 	});
@@ -24,9 +26,13 @@ function AdminLayout() {
 	return (
 		<SidebarProvider>
 			<div className="flex min-h-svh w-full">
-				<AdminSidebar />
+				<AdminSidebar onSecondarySidebarChange={setIsSecondarySidebarOpen} />
 
-				<main className="flex min-w-0 flex-1 flex-col">
+				<main
+					className={`flex min-w-0 flex-1 flex-col [&>div>main]:transition-[margin] ${
+						isSecondarySidebarOpen ? "[&>div>main]:ml-72" : ""
+					}`}
+				>
 					<Outlet />
 				</main>
 			</div>

@@ -56,7 +56,7 @@ export function AgentTopbar() {
 
 				<div className="hidden border-slate-200 border-r pr-4 sm:block dark:border-slate-800">
 					<p className="font-bold text-[#102b55] text-sm dark:text-white">
-						Workholo
+						WORKHOLO
 					</p>
 
 					<p className="text-[9px] text-slate-400 uppercase tracking-wide">

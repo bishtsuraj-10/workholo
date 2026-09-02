@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 
 import { AdminTopbar } from "@/components/admin/admin-topbar";
+import { useState } from "react";
 
 export const Route = createFileRoute("/admin/")({
 	component: AdminDashboard,
@@ -27,18 +28,25 @@ const faqs = [
 	{
 		question:
 			"Will my customer be automatically connected to the same agent he spoke with earlier?",
+		answer:
+			"Yes. If the same agent is available, the customer can be routed back to that agent based on the configured call routing settings.",
 	},
 	{
 		question:
 			"Does Acefone provide SMS or Email notifications for when an agent misses a call?",
+		answer:
+			"Yes. SMS and Email notifications can be configured for missed calls so that the required users or agents are notified.",
 	},
 	{
 		question: "Does Acefone provide auto-charge facility?",
+		answer:
+			"Yes. Auto-charge can be enabled to automatically recharge the account when the available balance reaches the configured threshold.",
 	},
 ];
 
 function AdminDashboard() {
 	const navigate = useNavigate();
+	const [openFaq, setOpenFaq] = useState<string | null>(null);
 
 	return (
 		<div className="flex min-h-svh flex-col bg-[#eef3f9] dark:bg-slate-950">
@@ -268,25 +276,48 @@ function AdminDashboard() {
 
 							<CardContent className="p-0">
 								<div className="divide-y divide-slate-100 dark:divide-slate-800">
-									{faqs.map((faq) => (
-										<button
-											className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition-colors hover:bg-blue-50/50 dark:hover:bg-slate-800/60"
-											key={faq.question}
-											type="button"
-										>
-											<div className="flex items-start gap-3">
-												<span className="mt-0.5 font-bold text-[#0757ff] dark:text-blue-400">
-													•
-												</span>
+									{faqs.map((faq) => {
+										const isOpen = openFaq === faq.question;
 
-												<span className="text-slate-600 text-xs dark:text-slate-300">
-													{faq.question}
-												</span>
+										return (
+											<div className="border-slate-100 border-b last:border-b-0 dark:border-slate-800" key={faq.question}>
+												<button
+													aria-expanded={isOpen}
+													className={`flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition-colors hover:bg-blue-50/50 dark:hover:bg-slate-800/60 ${isOpen ? "bg-blue-50/40 dark:bg-slate-800/40" : ""
+														}`}
+													onClick={() =>
+														setOpenFaq((current) =>
+															current === faq.question ? null : faq.question
+														)
+													}
+													type="button"
+												>
+													<div className="flex items-start gap-3">
+														<span className="mt-0.5 font-bold text-[#0757ff] dark:text-blue-400">
+															•
+														</span>
+
+														<span className="font-medium text-slate-600 text-xs dark:text-slate-300">
+															{faq.question}
+														</span>
+													</div>
+
+													<ChevronDown
+														className={`size-4 shrink-0 text-slate-400 transition-transform dark:text-slate-500 ${isOpen ? "rotate-180 text-[#0757ff] dark:text-blue-400" : ""
+															}`}
+													/>
+												</button>
+
+												{isOpen ? (
+													<div className="px-5 pb-4 pl-12">
+														<p className="text-slate-500 text-xs leading-5 dark:text-slate-400">
+															{faq.answer}
+														</p>
+													</div>
+												) : null}
 											</div>
-
-											<ChevronDown className="size-4 shrink-0 text-slate-400 dark:text-slate-500" />
-										</button>
-									))}
+										);
+									})}
 								</div>
 							</CardContent>
 						</Card>
