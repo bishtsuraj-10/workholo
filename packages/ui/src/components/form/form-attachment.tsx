@@ -4,7 +4,7 @@ import {
 	AttachmentGroup,
 	AttachmentTitle,
 	AttachmentTrigger,
-} from "@sprint-stack/ui/components/attachment";
+} from "@workholo/ui/components/attachment";
 import {
 	type ChangeEvent,
 	type ComponentProps,

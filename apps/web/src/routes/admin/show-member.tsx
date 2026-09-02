@@ -243,20 +243,20 @@ function ShowMemberPage() {
 	};
 
 	return (
-		<div className="flex min-h-screen flex-col bg-[#0b1220] text-slate-100">
+		<div className="flex min-h-svh flex-col bg-[#f4f7fb] text-slate-700 dark:bg-[#07111f] dark:text-slate-100">
 			<AdminTopbar />
 
 			<main className="flex-1 p-4 md:p-6">
-				<div className="mx-auto max-w-[1600px] overflow-hidden rounded-2xl border border-slate-800 bg-[#0d1728] shadow-sm">
+				<div className="mx-auto max-w-[1600px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-slate-200/50 shadow-sm dark:border-slate-800 dark:bg-[#0b1728] dark:shadow-none">
 					{/* Header */}
-					<div className="flex flex-col gap-3 border-slate-800 border-b px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
-						<h1 className="font-medium text-base text-slate-100">
+					<div className="flex flex-col gap-3 border-slate-200 border-b bg-white px-5 py-4 lg:flex-row lg:items-center lg:justify-between dark:border-slate-800 dark:bg-[#0b1728]">
+						<h1 className="border-[#0757ff] border-l-4 pl-3 font-semibold text-[#102b55] text-base dark:text-slate-100">
 							Team Members
 						</h1>
 
 						<div className="flex flex-wrap items-center gap-2">
 							<Button
-								className="h-9 border-slate-700 bg-[#111d31] px-3 text-slate-300 text-xs hover:bg-slate-800"
+								className="h-9 rounded-lg border-slate-200 bg-white px-3 text-slate-600 text-xs shadow-sm hover:border-[#0757ff]/40 hover:bg-blue-50/50 hover:text-[#0757ff] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-blue-400"
 								size="sm"
 								variant="outline"
 							>
@@ -264,7 +264,7 @@ function ShowMemberPage() {
 							</Button>
 
 							<Button
-								className="h-9 border-slate-700 bg-[#111d31] px-3 text-slate-300 text-xs hover:bg-slate-800"
+								className="h-9 rounded-lg border-slate-200 bg-white px-3 text-slate-600 text-xs shadow-sm hover:border-[#0757ff]/40 hover:bg-blue-50/50 hover:text-[#0757ff] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-blue-400"
 								onClick={() => navigate({ to: "/admin/member-groups" })}
 								size="sm"
 								variant="outline"
@@ -274,7 +274,7 @@ function ShowMemberPage() {
 
 							<select
 								aria-label="More Actions"
-								className="h-9 rounded-md border border-slate-700 bg-[#111d31] px-3 text-slate-300 text-xs outline-none focus:border-blue-500"
+								className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-slate-600 text-xs shadow-sm outline-none focus:border-[#0757ff] focus:ring-2 focus:ring-[#0757ff]/10 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
 								defaultValue=""
 							>
 								<option disabled value="">
@@ -287,12 +287,12 @@ function ShowMemberPage() {
 					</div>
 
 					{/* Table controls */}
-					<div className="flex flex-col gap-4 border-slate-800 border-b px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+					<div className="flex flex-col gap-4 border-slate-100 border-b bg-slate-50/50 px-5 py-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800 dark:bg-slate-900/30">
 						<label className="flex items-center gap-2 text-slate-400 text-xs">
 							Show
 							<select
 								aria-label="Entries per page"
-								className="h-9 rounded-md border border-slate-700 bg-[#111d31] px-3 text-slate-200 outline-none focus:border-blue-500"
+								className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-slate-700 outline-none focus:border-[#0757ff] focus:ring-2 focus:ring-[#0757ff]/10 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200"
 								onChange={(event) => {
 									setPageSize(Number(event.target.value));
 									setCurrentPage(1);
@@ -311,9 +311,9 @@ function ShowMemberPage() {
 								Search
 							</label>
 							<div className="relative w-full sm:w-64">
-								<Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-500" />
+								<Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
 								<Input
-									className="h-9 border-slate-700 bg-[#111d31] pl-9 text-slate-200 text-xs placeholder:text-slate-500"
+									className="h-9 rounded-lg border-slate-200 bg-white pl-9 text-slate-700 text-xs shadow-sm focus:border-[#0757ff] focus:ring-2 focus:ring-[#0757ff]/10 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:placeholder:text-slate-500"
 									id="team-member-search"
 									onChange={(event) => {
 										setSearch(event.target.value);
@@ -328,8 +328,8 @@ function ShowMemberPage() {
 
 					{/* Table */}
 					<div className="overflow-x-auto">
-						<table className="w-full min-w-[1050px] text-left text-xs">
-							<thead className="border-slate-800 border-b bg-[#0b1525] text-slate-400">
+						<table className="w-full min-w-[1050px] border-collapse text-left text-xs">
+							<thead className="border-slate-100 border-b bg-slate-50/70 text-[#263b5b] dark:border-slate-800 dark:bg-slate-900/70 dark:text-slate-300">
 								<tr>
 									<th className="px-4 py-3 font-medium">S.No.</th>
 									<th className="px-4 py-3 font-medium">Name</th>
@@ -341,36 +341,42 @@ function ShowMemberPage() {
 								</tr>
 							</thead>
 
-							<tbody className="divide-y divide-slate-800">
+							<tbody className="divide-y divide-slate-100 dark:divide-slate-800">
 								{visibleMembers.map((member) => (
 									<tr
-										className="transition-colors hover:bg-slate-900/70"
+										className="transition-colors hover:bg-blue-50/40 dark:hover:bg-slate-900/50"
 										key={member.id}
 									>
-										<td className="px-4 py-4 text-slate-300">{member.id}.</td>
-										<td className="px-4 py-4 font-medium text-slate-200">
+										<td className="px-4 py-4 text-slate-500 dark:text-slate-400">
+											{member.id}.
+										</td>
+										<td className="px-4 py-4 font-medium text-[#102b55] dark:text-slate-200">
 											{member.name}
 											{member.id === 1 && (
-												<span className="ml-2 rounded bg-slate-700 px-1.5 py-0.5 text-[10px] text-slate-200">
+												<span className="ml-2 rounded-full bg-blue-50 px-2 py-0.5 font-semibold text-[#0757ff] text-[10px] dark:bg-blue-950/60 dark:text-blue-400">
 													Owner
 												</span>
 											)}
 										</td>
-										<td className="px-4 py-4 text-slate-400">{member.email}</td>
-										<td className="px-4 py-4 text-slate-400">
+										<td className="px-4 py-4 text-slate-600 dark:text-slate-400">
+											{member.email}
+										</td>
+										<td className="px-4 py-4 text-slate-600 dark:text-slate-400">
 											{member.loginId}
 										</td>
-										<td className="px-4 py-4 text-slate-400">{member.role}</td>
+										<td className="px-4 py-4 text-slate-600 dark:text-slate-400">
+											{member.role}
+										</td>
 										<td className="px-4 py-4">
-											<span className="inline-flex items-center gap-1.5 text-slate-300">
-												<span className="size-2 rounded-full bg-emerald-400" />
+											<span className="inline-flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
+												<span className="size-2 rounded-full bg-emerald-500" />
 												{member.status}
 											</span>
 										</td>
 										<td className="px-4 py-4">
 											<select
 												aria-label={`Actions for ${member.name}`}
-												className="h-8 min-w-32 rounded-md border border-slate-700 bg-[#111d31] px-2 text-slate-300 text-xs outline-none focus:border-blue-500"
+												className="h-9 min-w-32 rounded-lg border border-slate-200 bg-white px-2.5 text-slate-600 text-xs shadow-sm outline-none transition hover:border-[#0757ff]/40 focus:border-[#0757ff] focus:ring-2 focus:ring-[#0757ff]/10 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
 												defaultValue=""
 											>
 												<option disabled value="">
@@ -387,7 +393,7 @@ function ShowMemberPage() {
 								{visibleMembers.length === 0 && (
 									<tr>
 										<td
-											className="px-4 py-12 text-center text-slate-500"
+											className="px-4 py-12 text-center text-slate-400 dark:text-slate-500"
 											colSpan={7}
 										>
 											No team members found.
@@ -399,7 +405,7 @@ function ShowMemberPage() {
 					</div>
 
 					{/* Footer / pagination */}
-					<div className="flex flex-col gap-4 border-slate-800 border-t px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+					<div className="flex flex-col gap-4 border-slate-100 border-t bg-white px-5 py-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800 dark:bg-[#0b1728]">
 						<span className="text-slate-500 text-xs">
 							Showing {firstEntry} to {lastEntry} of {filteredMembers.length}{" "}
 							entries
@@ -408,7 +414,7 @@ function ShowMemberPage() {
 						<div className="flex items-center gap-1">
 							<Button
 								aria-label="Previous page"
-								className="h-8 border-slate-700 bg-[#111d31] px-2 text-slate-400 text-xs hover:bg-slate-800"
+								className="h-8 rounded-lg border-slate-200 bg-white px-2 text-slate-500 text-xs shadow-none hover:border-[#0757ff]/40 hover:bg-blue-50 hover:text-[#0757ff] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-blue-400"
 								disabled={safePage === 1}
 								onClick={() => goToPage(safePage - 1)}
 								size="sm"
@@ -425,7 +431,7 @@ function ShowMemberPage() {
 										className={
 											page === safePage
 												? "h-8 min-w-8 border-blue-600 bg-blue-600 px-2 text-white text-xs hover:bg-blue-600"
-												: "h-8 min-w-8 border-slate-700 bg-[#111d31] px-2 text-slate-400 text-xs hover:bg-slate-800"
+												: "h-8 min-w-8 border-0 border-slate-700 px-2 text-slate-400 text-xs hover:bg-slate-800"
 										}
 										key={page}
 										onClick={() => goToPage(page)}
@@ -438,7 +444,7 @@ function ShowMemberPage() {
 
 							<Button
 								aria-label="Next page"
-								className="h-8 border-slate-700 bg-[#111d31] px-2 text-slate-400 text-xs hover:bg-slate-800"
+								className="h-8 rounded-lg border-slate-200 bg-white px-2 text-slate-500 text-xs shadow-none hover:border-[#0757ff]/40 hover:bg-blue-50 hover:text-[#0757ff] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-blue-400"
 								disabled={safePage === totalPages}
 								onClick={() => goToPage(safePage + 1)}
 								size="sm"

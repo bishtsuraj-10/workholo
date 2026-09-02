@@ -1,5 +1,3 @@
-// biome-ignore-all lint/performance/noJsxPropsBind: The theme toggle is a local UI action.
-
 import { useNavigate } from "@tanstack/react-router";
 import { Avatar, AvatarFallback } from "@workholo/ui/components/avatar";
 import { Button } from "@workholo/ui/components/button";
@@ -14,15 +12,17 @@ import { Separator } from "@workholo/ui/components/separator";
 import { SidebarTrigger } from "@workholo/ui/components/sidebar";
 import {
 	Bell,
+	CheckCheck,
+	CircleAlert,
 	LogOut,
 	Mail,
 	Moon,
 	Phone,
-	Search,
 	Settings,
 	Sun,
 } from "lucide-react";
 import { useTheme } from "next-themes";
+import { useCallback } from "react";
 
 import { authClient } from "@/lib/auth-client";
 
@@ -35,14 +35,27 @@ export function AdminTopbar() {
 	const userPhone = "No phone number";
 	const userInitial = userName.charAt(0).toUpperCase();
 
-	const toggleTheme = () => {
+	const toggleTheme = useCallback(() => {
 		setTheme(theme === "dark" ? "light" : "dark");
-	};
+	}, [setTheme, theme]);
 
-	const signOut = async () => {
+	const signOut = useCallback(async () => {
 		await authClient.signOut();
 		navigate({ to: "/auth" });
-	};
+	}, [navigate]);
+
+	const openNotificationManagement = useCallback(() => {
+		navigate({ to: "/admin/notification-management" });
+	}, [navigate]);
+
+	const openProfile = useCallback(() => {
+		navigate({ to: "/admin/profile" });
+	}, [navigate]);
+
+	// const signOut = async () => {
+	// 	await authClient.signOut();
+	// 	navigate({ to: "/auth" });
+	// };
 
 	return (
 		<header className="sticky top-0 flex h-16 shrink-0 items-center gap-3 border-slate-200 border-b bg-white px-4 dark:border-slate-800 dark:bg-slate-950">
@@ -76,25 +89,55 @@ export function AdminTopbar() {
 				)}
 			</Button>
 
-			{/* Search */}
-			<Button
-				className="text-slate-500 hover:bg-blue-50 hover:text-[#0757ff] dark:text-slate-300 dark:hover:bg-slate-900 dark:hover:text-blue-400"
-				size="icon"
-				title="Search"
-				variant="ghost"
-			>
-				<Search className="size-4" />
-			</Button>
+			<DropdownMenu>
+				<DropdownMenuTrigger aria-label="Open notifications">
+					<Button
+						className="relative text-slate-500 hover:bg-blue-50 hover:text-[#0757ff] dark:text-slate-300 dark:hover:bg-slate-900 dark:hover:text-blue-400"
+						size="icon"
+						title="Notifications"
+						variant="ghost"
+					>
+						<Bell className="size-4" />
+						<span className="absolute top-2 right-2 size-1.5 rounded-full bg-[#0757ff] ring-2 ring-white dark:ring-slate-950" />
+					</Button>
+				</DropdownMenuTrigger>
 
-			{/* Notifications */}
-			<Button
-				className="text-slate-500 hover:bg-blue-50 hover:text-[#0757ff] dark:text-slate-300 dark:hover:bg-slate-900 dark:hover:text-blue-400"
-				size="icon"
-				title="Notifications"
-				variant="ghost"
-			>
-				<Bell className="size-4" />
-			</Button>
+				<DropdownMenuContent align="end" className="w-80 p-0">
+					<div className="flex items-center justify-between border-slate-200 border-b px-4 py-3 dark:border-slate-700">
+						<div>
+							<p className="font-semibold text-foreground text-sm">
+								Notifications
+							</p>
+							<p className="text-muted-foreground text-xs">Recent activity</p>
+						</div>
+						<CheckCheck className="size-4 text-[#0757ff]" />
+					</div>
+
+					<div className="p-2">
+						<DropdownMenuItem className="items-start gap-3 py-3">
+							<div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-blue-50 text-[#0757ff] dark:bg-blue-950/60 dark:text-blue-400">
+								<Bell className="size-3.5" />
+							</div>
+							<div className="min-w-0">
+								<p className="font-medium text-sm">Notifications are ready</p>
+								<p className="mt-0.5 text-muted-foreground text-xs">
+									Manage alerts and delivery preferences.
+								</p>
+							</div>
+						</DropdownMenuItem>
+					</div>
+
+					<DropdownMenuSeparator />
+
+					<DropdownMenuItem
+						className="m-2 justify-center font-medium text-[#0757ff]"
+						onClick={openNotificationManagement}
+					>
+						<CircleAlert className="size-4" />
+						Manage notifications
+					</DropdownMenuItem>
+				</DropdownMenuContent>
+			</DropdownMenu>
 
 			<DropdownMenu>
 				<DropdownMenuTrigger aria-label="Open user menu">
@@ -135,9 +178,7 @@ export function AdminTopbar() {
 							<span className="truncate">{userEmail}</span>
 						</div>
 
-						<DropdownMenuItem
-							onClick={() => navigate({ to: "/admin/profile" })}
-						>
+						<DropdownMenuItem onClick={openProfile}>
 							<Settings className="size-5" />
 							Profile
 						</DropdownMenuItem>

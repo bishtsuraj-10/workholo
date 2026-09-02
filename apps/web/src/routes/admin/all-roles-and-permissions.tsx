@@ -82,20 +82,20 @@ function AllRolesAndPermissionsPage() {
 	};
 
 	return (
-		<div className="flex min-h-svh flex-col bg-[#eef3f9] dark:bg-[#07111f]">
+		<div className="flex min-h-svh flex-col bg-[#f4f7fb] dark:bg-[#07111f]">
 			<AdminTopbar />
 
-			<main className="flex-1 p-4 md:p-6">
+			<main className="flex-1 bg-[#f4f7fb] p-4 md:p-6 dark:bg-[#07111f]">
 				<div className="mx-auto max-w-[1600px]">
-					<section className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-[#0b1728]">
+					<section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-slate-200/50 shadow-sm dark:border-slate-800 dark:bg-[#0b1728] dark:shadow-none">
 						{/* Page header */}
-						<div className="flex items-center justify-between border-slate-200 border-b px-4 py-3 dark:border-slate-800">
-							<h1 className="font-medium text-[#102b55] text-sm dark:text-white">
+						<div className="flex items-center justify-between border-slate-200 border-b bg-white px-5 py-4 dark:border-slate-800 dark:bg-[#0b1728]">
+							<h1 className="border-[#0757ff] border-l-4 pl-3 font-semibold text-[#102b55] text-base dark:text-white">
 								List of all Roles
 							</h1>
 
 							<Button
-								className="h-8 gap-1 rounded-sm bg-[#0757ff] px-3 text-white text-xs shadow-sm hover:bg-[#004be0] dark:bg-blue-600 dark:hover:bg-blue-500"
+								className="h-9 gap-1.5 rounded-lg bg-[#0757ff] px-4 font-semibold text-white text-xs shadow-blue-500/20 shadow-sm hover:bg-[#0649d8] dark:bg-blue-600 dark:hover:bg-blue-500"
 								onClick={openAddRole}
 								type="button"
 							>
@@ -105,13 +105,13 @@ function AllRolesAndPermissionsPage() {
 						</div>
 
 						{/* Table controls */}
-						<div className="flex flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+						<div className="flex flex-col gap-4 border-slate-100 border-b bg-slate-50/50 px-5 py-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800 dark:bg-slate-900/30">
 							<div className="flex items-center gap-2 text-slate-600 text-xs dark:text-slate-300">
 								<span>Show</span>
 
 								<select
 									aria-label="Rows per page"
-									className="h-8 rounded-sm border border-slate-300 bg-white px-2 text-xs outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+									className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-slate-700 text-xs outline-none transition focus:border-[#0757ff] focus:ring-2 focus:ring-[#0757ff]/10 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200"
 									onChange={handlePageSizeChange}
 									value={pageSize}
 								>
@@ -133,9 +133,9 @@ function AllRolesAndPermissionsPage() {
 								</label>
 
 								<div className="relative">
-									<Search className="pointer-events-none absolute top-1/2 left-2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+									<Search className="pointer-events-none absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
 									<Input
-										className="h-8 w-[220px] rounded-sm border-slate-300 pl-7 text-xs dark:border-slate-700"
+										className="h-9 w-[240px] rounded-lg border-slate-200 pl-8 text-xs shadow-none focus:border-[#0757ff] focus:ring-2 focus:ring-[#0757ff]/10 dark:border-slate-700"
 										id="roles-search"
 										onChange={handleSearchChange}
 										value={search}
@@ -148,17 +148,17 @@ function AllRolesAndPermissionsPage() {
 						<div className="overflow-x-auto">
 							<table className="w-full min-w-[720px] border-collapse text-xs">
 								<thead>
-									<tr className="bg-slate-50 text-left dark:bg-slate-900/70">
-										<th className="w-[120px] border-slate-200 border-b px-4 py-3 font-medium text-slate-600 dark:border-slate-800 dark:text-slate-300">
+									<tr className="bg-[#f5f8fc] text-left dark:bg-slate-900/70">
+										<th className="w-[120px] border-slate-200 border-b px-4 py-3 font-semibold text-[#102b55] text-xs dark:border-slate-800 dark:text-slate-300">
 											Id
 										</th>
-										<th className="border-slate-200 border-b px-4 py-3 font-medium text-slate-600 dark:border-slate-800 dark:text-slate-300">
+										<th className="border-slate-200 border-b px-4 py-3 font-semibold text-[#102b55] text-xs dark:border-slate-800 dark:text-slate-300">
 											Name
 										</th>
-										<th className="border-slate-200 border-b px-4 py-3 font-medium text-slate-600 dark:border-slate-800 dark:text-slate-300">
+										<th className="border-slate-200 border-b px-4 py-3 font-semibold text-[#102b55] text-xs dark:border-slate-800 dark:text-slate-300">
 											Description
 										</th>
-										<th className="w-[180px] border-slate-200 border-b px-4 py-3 font-medium text-slate-600 dark:border-slate-800 dark:text-slate-300">
+										<th className="w-[180px] border-slate-200 border-b px-4 py-3 font-semibold text-[#102b55] text-xs dark:border-slate-800 dark:text-slate-300">
 											Actions
 										</th>
 									</tr>
@@ -167,23 +167,23 @@ function AllRolesAndPermissionsPage() {
 								<tbody>
 									{visibleRoles.map((role) => (
 										<tr
-											className="transition-colors hover:bg-slate-50 dark:hover:bg-slate-900/50"
+											className="transition-colors hover:bg-blue-50/40 dark:hover:bg-slate-900/50"
 											key={role.id}
 										>
-											<td className="border-slate-200 border-b px-4 py-3 text-slate-700 dark:border-slate-800 dark:text-slate-300">
+											<td className="border-slate-100 border-b px-4 py-3 text-slate-600 dark:border-slate-800 dark:text-slate-300">
 												{role.id}
 											</td>
-											<td className="border-slate-200 border-b px-4 py-3 text-slate-700 dark:border-slate-800 dark:text-slate-200">
+											<td className="border-slate-100 border-b px-4 py-3 font-medium text-[#102b55] dark:border-slate-800 dark:text-slate-200">
 												{role.name}
 											</td>
-											<td className="border-slate-200 border-b px-4 py-3 text-slate-700 dark:border-slate-800 dark:text-slate-300">
+											<td className="border-slate-100 border-b px-4 py-3 text-slate-600 dark:border-slate-800 dark:text-slate-300">
 												{role.description}
 											</td>
-											<td className="relative border-slate-200 border-b px-4 py-2 dark:border-slate-800">
+											<td className="relative border-slate-100 border-b px-4 py-2 dark:border-slate-800">
 												<div className="relative inline-block">
 													<button
 														aria-expanded={openAction === role.id}
-														className="h-7 min-w-[110px] rounded-sm border border-slate-300 bg-white px-3 text-left text-[11px] text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+														className="h-9 min-w-[130px] rounded-lg border border-slate-200 bg-white px-3 text-left font-medium text-[11px] text-slate-600 shadow-sm transition hover:border-[#0757ff]/40 hover:bg-blue-50/40 hover:text-[#0757ff] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
 														onClick={() =>
 															setOpenAction(
 																openAction === role.id ? null : role.id
@@ -195,16 +195,16 @@ function AllRolesAndPermissionsPage() {
 													</button>
 
 													{openAction === role.id && (
-														<div className="absolute top-8 left-0 z-20 w-[150px] overflow-hidden rounded-sm border border-slate-200 bg-white shadow-md dark:border-slate-700 dark:bg-slate-900">
+														<div className="absolute top-10 left-0 z-20 w-[160px] overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg shadow-slate-200/50 dark:border-slate-700 dark:bg-slate-900 dark:shadow-none">
 															<button
-																className="block w-full px-3 py-2 text-left text-slate-700 text-xs hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
+																className="block w-full px-3 py-2.5 text-left text-slate-700 text-xs transition hover:bg-blue-50 hover:text-[#0757ff] dark:text-slate-200 dark:hover:bg-slate-800"
 																onClick={() => setOpenAction(null)}
 																type="button"
 															>
 																View Role
 															</button>
 															<button
-																className="block w-full px-3 py-2 text-left text-slate-700 text-xs hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
+																className="block w-full px-3 py-2.5 text-left text-slate-700 text-xs transition hover:bg-blue-50 hover:text-[#0757ff] dark:text-slate-200 dark:hover:bg-slate-800"
 																onClick={() => setOpenAction(null)}
 																type="button"
 															>
@@ -232,7 +232,7 @@ function AllRolesAndPermissionsPage() {
 						</div>
 
 						{/* Footer / pagination */}
-						<div className="flex flex-col gap-3 px-4 py-4 text-xs sm:flex-row sm:items-center sm:justify-between">
+						<div className="flex flex-col gap-3 border-slate-100 border-t bg-white px-5 py-4 text-xs sm:flex-row sm:items-center sm:justify-between dark:border-slate-800 dark:bg-[#0b1728]">
 							<p className="text-slate-500 dark:text-slate-400">
 								Showing {firstShown} to {lastShown} of {filteredRoles.length}{" "}
 								entries
@@ -241,7 +241,7 @@ function AllRolesAndPermissionsPage() {
 							<div className="flex items-center gap-1">
 								<Button
 									aria-label="First page"
-									className="h-8 px-2 text-xs"
+									className="h-8 rounded-lg border-slate-200 px-2 text-xs shadow-none hover:border-[#0757ff]/40 hover:text-[#0757ff] dark:border-slate-700"
 									disabled={safePage === 1}
 									onClick={goFirst}
 									size="sm"
@@ -253,7 +253,7 @@ function AllRolesAndPermissionsPage() {
 								</Button>
 
 								<Button
-									className="h-8 px-3 text-xs"
+									className="h-8 rounded-lg border-slate-200 px-3 text-xs shadow-none hover:border-[#0757ff]/40 hover:text-[#0757ff] dark:border-slate-700"
 									disabled={safePage === 1}
 									onClick={goPrevious}
 									size="sm"
@@ -264,7 +264,7 @@ function AllRolesAndPermissionsPage() {
 								</Button>
 
 								<Button
-									className="h-8 min-w-8 bg-[#0757ff] px-2 text-xs hover:bg-[#004be0] dark:bg-blue-600 dark:hover:bg-blue-500"
+									className="h-8 min-w-8 rounded-lg bg-[#0757ff] px-2 font-semibold text-white text-xs shadow-blue-500/20 shadow-sm hover:bg-[#0649d8] dark:bg-blue-600 dark:hover:bg-blue-500"
 									onClick={goFirst}
 									size="sm"
 									type="button"
@@ -273,7 +273,7 @@ function AllRolesAndPermissionsPage() {
 								</Button>
 
 								<Button
-									className="h-8 px-3 text-xs"
+									className="h-8 rounded-lg border-slate-200 px-3 text-xs shadow-none hover:border-[#0757ff]/40 hover:text-[#0757ff] dark:border-slate-700"
 									disabled={safePage === totalPages}
 									onClick={goNext}
 									size="sm"
@@ -285,7 +285,7 @@ function AllRolesAndPermissionsPage() {
 
 								<Button
 									aria-label="Last page"
-									className="h-8 px-2 text-xs"
+									className="h-8 rounded-lg border-slate-200 px-2 text-xs shadow-none hover:border-[#0757ff]/40 hover:text-[#0757ff] dark:border-slate-700"
 									disabled={safePage === totalPages}
 									onClick={goLast}
 									size="sm"
